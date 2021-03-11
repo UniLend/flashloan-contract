@@ -9,9 +9,10 @@ import "./EthAddressLib.sol";
 
 contract UnilendFDonation {
     using SafeMath for uint256;
+    using SafeERC20 for IERC20;
     
     uint public defaultReleaseRate;
-    mapping(address => uint) releaseRate;
+    mapping(address => uint) public releaseRate;
     mapping(address => uint) public lastReleased;
     address public core;
     
@@ -71,7 +72,7 @@ contract UnilendFDonation {
         require(amount > 0, "Amount can't be zero");
         releaseTokens(_token);
         
-        IERC20(_token).transferFrom(msg.sender, address(this), amount);
+        IERC20(_token).safeTransferFrom(msg.sender, address(this), amount);
         
         emit NewDonation(msg.sender, amount);
         
@@ -95,21 +96,23 @@ contract UnilendFDonation {
             tokenBalance = IERC20(_token).balanceOf( address(this) );
         }
         
-        
         if(tokenBalance > 0){
             uint remainingRate = ( block.timestamp.sub( lastReleased[_token] ) ).mul( getReleaseRate(_token) );
             uint maxRate = 100 * 10**18;
+            
+            lastReleased[_token] = block.timestamp;
             
             if(remainingRate > maxRate){ remainingRate = maxRate; }
             uint totalReleased = ( tokenBalance.mul( remainingRate )).div(10**20);
             
             if(totalReleased > 0){
-                IERC20(_token).transfer(core, totalReleased);
+                IERC20(_token).safeTransfer(core, totalReleased);
                 
                 emit Released(core, totalReleased);
             }
+        } 
+        else {
+            lastReleased[_token] = block.timestamp;
         }
-        
-        lastReleased[_token] = block.timestamp;
     }
 }
