@@ -145,7 +145,7 @@ contract UFlashLoanPool is ERC20 {
     }
     
     
-    function balanceOfUnderlying(address _address) public view returns (uint) {
+    function balanceOfUnderlying(address _address) public view returns (uint _bal) {
         uint _balance = balanceOf(_address);
         
         if(_balance > 0){
@@ -157,15 +157,12 @@ contract UFlashLoanPool is ERC20 {
                 tokenBalance = IERC20(token).balanceOf(core);
             }
             
-            address donationAddress = UnilendFlashLoanCore( core ).getDonationContract();
+            address donationAddress = UnilendFlashLoanCore( core ).donationAddress();
             uint _balanceDonation = UnilendFDonation( donationAddress ).getCurrentRelease(token, block.timestamp);
             uint _totalPoolAmount = ( IERC20(token).balanceOf(core) ).add(_balanceDonation);
             
-            return getShareValue(_totalPoolAmount, totalSupply(), _balance);
+            _bal = getShareValue(_totalPoolAmount, totalSupply(), _balance);
         } 
-        else {
-            return 0;
-        }
     }
 }
 
@@ -175,7 +172,7 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
     using SafeERC20 for ERC20;
     
     address public admin;
-    address payable distributorAddress;
+    address payable public distributorAddress;
     address public donationAddress;
     
     mapping(address => address) public Pools;
@@ -251,7 +248,6 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
         _;
     }
     
-    
     /**
     * @dev functions affected by this modifier can only be invoked if the provided _amount input parameter
     * is not zero.
@@ -264,44 +260,11 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
     
     receive() payable external {}
     
-    
-    function getDonationContract() public view returns (address) {
-        return donationAddress;
-    }
-    
-    function getTokenDistributor() public view returns (address) {
-        return distributorAddress;
-    }
-    
     /**
     * @dev returns the fee applied to a flashloan and the portion to redirect to the protocol, in basis points.
     **/
     function getFlashLoanFeesInBips() public view returns (uint256, uint256) {
         return (FLASHLOAN_FEE_TOTAL, FLASHLOAN_FEE_PROTOCOL);
-    }
-    
-    
-    /**
-    * @dev returns admin address of contract.
-    **/
-    function getAdmin() external view returns (address) {
-        return admin;
-    }
-    
-    /**
-    * @dev returns length of pool.
-    **/
-    function getPoolLength() external view returns (uint) {
-        return poolLength;
-    }
-    
-    /**
-    * @dev gets the uToken contract address for the reserve
-    * @param _reserve the reserve address
-    * @return the address of the uToken contract
-    **/
-    function getPool(address _reserve) external view returns (address) {
-        return Pools[_reserve];
     }
     
     /**
@@ -311,9 +274,10 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
     **/
     function getPools(address[] calldata _reserves) external view returns (address[] memory) {
         address[] memory _addresss = new address[](_reserves.length);
+        address[] memory _reserves_ = _reserves;
         
-        for (uint i=0; i<_reserves.length; i++) {
-            _addresss[i] = Pools[_reserves[i]];
+        for (uint i=0; i<_reserves_.length; i++) {
+            _addresss[i] = Pools[_reserves_[i]];
         }
         
         return _addresss;
@@ -327,6 +291,7 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
     * @param _admin the address of new admin
     **/
     function setAdmin(address _admin) external onlyAdmin {
+        require(_admin != address(0), "UnilendV1: ZERO ADDRESS");
         admin = _admin;
     }
     
@@ -335,6 +300,7 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
     * @param _address new address
     **/
     function setDistributorAddress(address payable _address) external onlyAdmin {
+        require(_address != address(0), "UnilendV1: ZERO ADDRESS");
         distributorAddress = _address;
     }
     
@@ -344,6 +310,9 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
     * @param _newFeeProtocol protocol fee
     **/
     function setFlashLoanFeesInBips(uint _newFeeTotal, uint _newFeeProtocol) external onlyAdmin returns (bool) {
+        require(_newFeeTotal > 0 && _newFeeTotal < 10000, "UnilendV1: INVALID TOTAL FEE RANGE");
+        require(_newFeeProtocol > 0 && _newFeeProtocol < 10000, "UnilendV1: INVALID PROTOCOL FEE RANGE");
+        
         FLASHLOAN_FEE_TOTAL = _newFeeTotal;
         FLASHLOAN_FEE_PROTOCOL = _newFeeProtocol;
         
@@ -358,6 +327,8 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
     * @param _amount the amount being transferred
     **/
     function transferToUser(address _reserve, address payable _user, uint256 _amount) internal {
+        require(_user != address(0), "UnilendV1: USER ZERO ADDRESS");
+        
         if (_reserve != EthAddressLib.ethAddress()) {
             ERC20(_reserve).safeTransfer(_user, _amount);
         } else {
@@ -377,7 +348,8 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
         if (_token != EthAddressLib.ethAddress()) {
             ERC20(_token).safeTransfer(distributorAddress, _amount);
         } else {
-            distributorAddress.transfer(_amount);
+            (bool result, ) = distributorAddress.call.value(_amount).gas(50000)("");
+            require(result, "Transfer of ETH failed");
         }
     }
     
