@@ -93,6 +93,8 @@ contract UFlashLoanPool is ERC20 {
         
         uint ntokens = calculateShare(_totalSupply, tokenBalance, amount);
         
+        require(ntokens > 0, 'Insufficient Liquidity Minted');
+        
         // MINT uTokens
         _mint(_recipient, ntokens);
         
@@ -101,6 +103,7 @@ contract UFlashLoanPool is ERC20 {
     
     
     function redeem(address _recipient, uint tok_amount) external onlyCore returns(uint) {
+        require(tok_amount > 0, 'Insufficient Liquidity Burned');
         require(balanceOf(_recipient) >= tok_amount, "Balance Exeeds Requested");
         
         uint tokenBalance;
@@ -133,9 +136,8 @@ contract UFlashLoanPool is ERC20 {
         
         uint tok_amount = getShareByValue(tokenBalance, totalSupply(), amount);
         
-        
+        require(tok_amount > 0, 'Insufficient Liquidity Burned');
         require(balanceOf(_recipient) >= tok_amount, "Balance Exeeds Requested");
-        
         require(tokenBalance >= amount, "Not enough Liquidity");
         
         // BURN uTokens
@@ -431,8 +433,6 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
         
         UnilendFDonation(donationAddress).releaseTokens(_reserve);
         
-        mintedTokens = UFlashLoanPool(Pools[_reserve]).deposit(msg.sender, _amount);
-        
         address _user = msg.sender;
         
         if (_reserve != EthAddressLib.ethAddress()) {
@@ -451,6 +451,7 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
             }
         }
         
+        mintedTokens = UFlashLoanPool(Pools[_reserve]).deposit(msg.sender, _amount);
         
         emit Deposit(_reserve, msg.sender, _amount, block.timestamp);
     }
