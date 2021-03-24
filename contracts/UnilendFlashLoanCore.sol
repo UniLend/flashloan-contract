@@ -91,7 +91,7 @@ contract UFlashLoanPool is ERC20 {
             tokenBalance = IERC20(token).balanceOf(core);
         }
         
-        uint ntokens = calculateShare(_totalSupply, tokenBalance, amount);
+        uint ntokens = calculateShare(_totalSupply, tokenBalance.sub(amount), amount);
         
         require(ntokens > 0, 'Insufficient Liquidity Minted');
         
