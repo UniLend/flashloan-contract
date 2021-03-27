@@ -4,8 +4,6 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
 
-import "./EthAddressLib.sol";
-
 
 contract UnilendFDonation {
     using SafeMath for uint256;
@@ -51,14 +49,7 @@ contract UnilendFDonation {
     }
     
     function getCurrentRelease(address _token, uint timestamp) public view returns (uint availRelease){
-        // uint tokenBalance = IERC20(_token).balanceOf( address(this) );
-        uint tokenBalance;
-        if(EthAddressLib.ethAddress() == _token){
-            tokenBalance = address(this).balance;
-        } 
-        else {
-            tokenBalance = IERC20(_token).balanceOf( address(this) );
-        }
+        uint tokenBalance = IERC20(_token).balanceOf( address(this) );
         
         uint remainingRate = ( timestamp.sub( lastReleased[_token] ) ).mul( getReleaseRate(_token) );
         uint maxRate = 100 * 10**18;
@@ -88,13 +79,7 @@ contract UnilendFDonation {
     }
     
     function releaseTokens(address _token) public {
-        uint tokenBalance;
-        if(EthAddressLib.ethAddress() == _token){
-            tokenBalance = address(this).balance;
-        } 
-        else {
-            tokenBalance = IERC20(_token).balanceOf( address(this) );
-        }
+        uint tokenBalance = IERC20(_token).balanceOf( address(this) );
         
         if(tokenBalance > 0){
             uint remainingRate = ( block.timestamp.sub( lastReleased[_token] ) ).mul( getReleaseRate(_token) );
