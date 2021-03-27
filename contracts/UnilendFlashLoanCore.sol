@@ -161,7 +161,7 @@ contract UFlashLoanPool is ERC20 {
             
             address donationAddress = UnilendFlashLoanCore( core ).donationAddress();
             uint _balanceDonation = UnilendFDonation( donationAddress ).getCurrentRelease(token, block.timestamp);
-            uint _totalPoolAmount = ( IERC20(token).balanceOf(core) ).add(_balanceDonation);
+            uint _totalPoolAmount = tokenBalance.add(_balanceDonation);
             
             _bal = getShareValue(_totalPoolAmount, totalSupply(), _balance);
         } 
