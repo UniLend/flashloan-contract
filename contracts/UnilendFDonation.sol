@@ -10,6 +10,7 @@ contract UnilendFDonation {
     using SafeERC20 for IERC20;
     
     uint public defaultReleaseRate;
+    bool public disableSetCore;
     mapping(address => uint) public releaseRate;
     mapping(address => uint) public lastReleased;
     address public core;
@@ -68,6 +69,16 @@ contract UnilendFDonation {
         emit NewDonation(msg.sender, amount);
         
         return true;
+    }
+    
+    function disableSetNewCore() external onlyCore {
+        require(!disableSetCore, "Already disabled");
+        disableSetCore = true;
+    }
+    
+    function setCoreAddress(address _newAddress) external onlyCore {
+        require(!disableSetCore, "SetCoreAddress disabled");
+        core = _newAddress;
     }
     
     function setReleaseRate(address _token, uint _newRate) external onlyCore {
