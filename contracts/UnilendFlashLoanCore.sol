@@ -182,7 +182,7 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
     uint public poolLength;
     
     
-    uint256 private FLASHLOAN_FEE_TOTAL = 9;
+    uint256 private FLASHLOAN_FEE_TOTAL = 5;
     uint256 private FLASHLOAN_FEE_PROTOCOL = 3000;
     
     
@@ -336,7 +336,6 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
         } else {
             //solium-disable-next-line
             (bool result, ) = _user.call{value: _amount, gas: 50000}("");
-            // (bool result, ) = _user.call.value(_amount).gas(50000)("");
             require(result, "Transfer of ETH failed");
         }
     }
@@ -351,7 +350,6 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
             ERC20(_token).safeTransfer(distributorAddress, _amount);
         } else {
             (bool result, ) = distributorAddress.call{value: _amount, gas: 50000}("");
-            // (bool result, ) = distributorAddress.call.value(_amount).gas(50000)("");
             require(result, "Transfer of ETH failed");
         }
     }
@@ -452,7 +450,6 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
                 uint256 excessAmount = msg.value.sub(_amount);
                 
                 (bool result, ) = _user.call{value: excessAmount, gas: 50000}("");
-                // (bool result, ) = _user.call.value(excessAmount).gas(50000)("");
                 require(result, "Transfer of ETH failed");
             }
         }
@@ -461,7 +458,6 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
         
         emit Deposit(_reserve, msg.sender, _amount, block.timestamp);
     }
-    
     
     
     /**
@@ -494,9 +490,6 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
         
         token_amount = UFlashLoanPool(Pools[_reserve]).redeemUnderlying(msg.sender, _amount);
         
-        // transfer ERC20 token for amount
-        // IERC20(_reserve).transfer(msg.sender, _amount);
-        
         //transfer funds to the user
         transferToUser(_reserve, payable(msg.sender), _amount);
         
@@ -515,19 +508,19 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
         
         ERC20 asset = ERC20(_reserve);
         
-        string memory aTokenName;
-        string memory aTokenSymbol;
+        string memory uTokenName;
+        string memory uTokenSymbol;
         
         if(_reserve == EthAddressLib.ethAddress()){
-            aTokenName = string(abi.encodePacked("UnilendV1 - ETH"));
-            aTokenSymbol = string(abi.encodePacked("uETH"));
+            uTokenName = string(abi.encodePacked("UnilendV1 - ETH"));
+            uTokenSymbol = string(abi.encodePacked("uETH"));
         } 
         else {
-            aTokenName = string(abi.encodePacked("UnilendV1 - ", asset.name()));
-            aTokenSymbol = string(abi.encodePacked("u", asset.symbol()));
+            uTokenName = string(abi.encodePacked("UnilendV1 - ", asset.name()));
+            uTokenSymbol = string(abi.encodePacked("u", asset.symbol()));
         }
         
-        UFlashLoanPool _poolMeta = new UFlashLoanPool(_reserve, aTokenName, aTokenSymbol);
+        UFlashLoanPool _poolMeta = new UFlashLoanPool(_reserve, uTokenName, uTokenSymbol);
         
         address _poolAddress = address(_poolMeta);
         
