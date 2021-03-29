@@ -335,8 +335,8 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
             ERC20(_reserve).safeTransfer(_user, _amount);
         } else {
             //solium-disable-next-line
-            // (bool result, ) = _user.call{value: _amount, gas: 50000}("");
-            (bool result, ) = _user.call.value(_amount).gas(50000)("");
+            (bool result, ) = _user.call{value: _amount, gas: 50000}("");
+            // (bool result, ) = _user.call.value(_amount).gas(50000)("");
             require(result, "Transfer of ETH failed");
         }
     }
@@ -350,7 +350,8 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
         if (_token != EthAddressLib.ethAddress()) {
             ERC20(_token).safeTransfer(distributorAddress, _amount);
         } else {
-            (bool result, ) = distributorAddress.call.value(_amount).gas(50000)("");
+            (bool result, ) = distributorAddress.call{value: _amount, gas: 50000}("");
+            // (bool result, ) = distributorAddress.call.value(_amount).gas(50000)("");
             require(result, "Transfer of ETH failed");
         }
     }
@@ -359,7 +360,7 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
     /**
     * @dev allows smartcontracts to access the liquidity of the pool within one transaction,
     * as long as the amount taken plus a fee is returned. NOTE There are security concerns for developers of flashloan receiver contracts
-    * that must be kept into consideration.
+    * that must be kept into consideration. For further details please visit https://developers.aave.com
     * @param _receiver The address of the contract receiving the funds. The receiver should implement the IFlashLoanReceiver interface.
     * @param _reserve the address of the principal reserve
     * @param _amount the amount requested for this flashloan
@@ -437,7 +438,12 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
         
         if (_reserve != EthAddressLib.ethAddress()) {
             require(msg.value == 0, "User is sending ETH along with the ERC20 transfer.");
+            
+            uint reserveBalance = IERC20(_reserve).balanceOf(address(this));
+            
             ERC20(_reserve).safeTransferFrom(_user, address(this), _amount);
+            
+            _amount = ( IERC20(_reserve).balanceOf(address(this)) ).sub(reserveBalance);
         } else {
             require(msg.value >= _amount, "The amount and the value sent to deposit do not match");
 
@@ -445,8 +451,8 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
                 //send back excess ETH
                 uint256 excessAmount = msg.value.sub(_amount);
                 
-                // (bool result, ) = _user.call{value: excessAmount, gas: 50000}("");
-                (bool result, ) = _user.call.value(excessAmount).gas(50000)("");
+                (bool result, ) = _user.call{value: excessAmount, gas: 50000}("");
+                // (bool result, ) = _user.call.value(excessAmount).gas(50000)("");
                 require(result, "Transfer of ETH failed");
             }
         }
