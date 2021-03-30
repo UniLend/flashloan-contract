@@ -348,6 +348,32 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
     }
     
     /**
+    * @dev disable changing donation pool donation address.
+    **/
+    function setDonationDisableNewCore() external onlyAdmin {
+        UnilendFDonation(donationAddress).disableSetNewCore();
+    }
+    
+    /**
+    * @dev set new core address for donation pool.
+    * @param _newAddress new address
+    **/
+    function setDonationCoreAddress(address _newAddress) external onlyAdmin {
+        require(_newAddress != address(0), "UnilendV1: ZERO ADDRESS");
+        UnilendFDonation(donationAddress).setCoreAddress(_newAddress);
+    }
+    
+    /**
+    * @dev set new release rate from donation pool for token
+    * @param _reserve reserve address
+    * @param _newRate new rate of release
+    **/
+    function setDonationReleaseRate(address _reserve, uint _newRate) external onlyAdmin {
+        require(_reserve != address(0), "UnilendV1: ZERO ADDRESS");
+        UnilendFDonation(donationAddress).setReleaseRate(_reserve, _newRate);
+    }
+    
+    /**
     * @dev set new flash loan fees.
     * @param _newFeeTotal total fee
     * @param _newFeeProtocol protocol fee
