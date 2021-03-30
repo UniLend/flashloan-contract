@@ -104,7 +104,7 @@ contract UFlashLoanPool is ERC20 {
     
     function redeem(address _recipient, uint tok_amount) external onlyCore returns(uint) {
         require(tok_amount > 0, 'Insufficient Liquidity Burned');
-        require(balanceOf(_recipient) >= tok_amount, "Balance Exeeds Requested");
+        require(balanceOf(_recipient) >= tok_amount, "Balance Exceeds Requested");
         
         uint tokenBalance;
         if(EthAddressLib.ethAddress() == token){
@@ -137,7 +137,7 @@ contract UFlashLoanPool is ERC20 {
         uint tok_amount = getShareByValue(tokenBalance, totalSupply(), amount);
         
         require(tok_amount > 0, 'Insufficient Liquidity Burned');
-        require(balanceOf(_recipient) >= tok_amount, "Balance Exeeds Requested");
+        require(balanceOf(_recipient) >= tok_amount, "Balance Exceeds Requested");
         require(tokenBalance >= amount, "Not enough Liquidity");
         
         // BURN uTokens
@@ -312,7 +312,9 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
     * @param timestamp timestamp of query
     **/
     function balanceOfUnderlying(address _reserve, address _address, uint timestamp) public view returns (uint _bal) {
-        _bal = UFlashLoanPool(Pools[_reserve]).balanceOfUnderlying(_address, timestamp);
+        if(Pools[_reserve] != address(0)){
+            _bal = UFlashLoanPool(Pools[_reserve]).balanceOfUnderlying(_address, timestamp);
+        }
     }
     
     /**
@@ -321,7 +323,9 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
     * @param timestamp timestamp of query
     **/
     function poolBalanceOfUnderlying(address _reserve, uint timestamp) public view returns (uint _bal) {
-        _bal = UFlashLoanPool(Pools[_reserve]).poolBalanceOfUnderlying(timestamp);
+        if(Pools[_reserve] != address(0)){
+            _bal = UFlashLoanPool(Pools[_reserve]).poolBalanceOfUnderlying(timestamp);
+        }
     }
     
     
@@ -537,7 +541,7 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
     
     /**
     * @dev Creates pool for asset.
-    * This function is executed by the overlying aToken contract in response to a redeem action.
+    * This function is executed by the overlying uToken contract in response to a redeem action.
     * @param _reserve the address of the reserve
     **/
     function createPool(address _reserve) public returns (address) {
