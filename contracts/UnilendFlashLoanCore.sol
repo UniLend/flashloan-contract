@@ -147,7 +147,7 @@ contract UFlashLoanPool is ERC20 {
     }
     
     
-    function balanceOfUnderlying(address _address) public view returns (uint _bal) {
+    function balanceOfUnderlying(address _address, uint timestamp) public view returns (uint _bal) {
         uint _balance = balanceOf(_address);
         
         if(_balance > 0){
@@ -160,10 +160,29 @@ contract UFlashLoanPool is ERC20 {
             }
             
             address donationAddress = UnilendFlashLoanCore( core ).donationAddress();
-            uint _balanceDonation = UnilendFDonation( donationAddress ).getCurrentRelease(token, block.timestamp);
+            uint _balanceDonation = UnilendFDonation( donationAddress ).getCurrentRelease(token, timestamp);
             uint _totalPoolAmount = tokenBalance.add(_balanceDonation);
             
             _bal = getShareValue(_totalPoolAmount, totalSupply(), _balance);
+        } 
+    }
+    
+    
+    function poolBalanceOfUnderlying(uint timestamp) public view returns (uint _bal) {
+        uint tokenBalance;
+        if(EthAddressLib.ethAddress() == token){
+            tokenBalance = address(core).balance;
+        } 
+        else {
+            tokenBalance = IERC20(token).balanceOf(core);
+        }
+        
+        if(tokenBalance > 0){
+            address donationAddress = UnilendFlashLoanCore( core ).donationAddress();
+            uint _balanceDonation = UnilendFDonation( donationAddress ).getCurrentRelease(token, timestamp);
+            uint _totalPoolAmount = tokenBalance.add(_balanceDonation);
+            
+            _bal = _totalPoolAmount;
         } 
     }
 }
@@ -286,6 +305,24 @@ contract UnilendFlashLoanCore is Context, ReentrancyGuard {
     }
     
     
+    /**
+    * @dev balance of underlying asset for user address
+    * @param _reserve reserve address
+    * @param _address user address
+    * @param timestamp timestamp of query
+    **/
+    function balanceOfUnderlying(address _reserve, address _address, uint timestamp) public view returns (uint _bal) {
+        _bal = UFlashLoanPool(Pools[_reserve]).balanceOfUnderlying(_address, timestamp);
+    }
+    
+    /**
+    * @dev balance of underlying asset for pool
+    * @param _reserve reserve address
+    * @param timestamp timestamp of query
+    **/
+    function poolBalanceOfUnderlying(address _reserve, uint timestamp) public view returns (uint _bal) {
+        _bal = UFlashLoanPool(Pools[_reserve]).poolBalanceOfUnderlying(timestamp);
+    }
     
     
     /**
